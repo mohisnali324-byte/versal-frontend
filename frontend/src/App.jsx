@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import Button from '@mui/material/Button';
+import Button from "@mui/material/Button";
 
+const API_URL = import.meta.env.VITE_API_URL;
 
 function App() {
-
   const [students, setStudents] = useState([]);
 
   const [name, setName] = useState("");
@@ -11,124 +11,97 @@ function App() {
   const [password, setPassword] = useState("");
   const [editId, setEditId] = useState(null);
 
-  // GET
+  // GET - Students ko fetch karna
   useEffect(() => {
-
-    fetch("http://localhost:5000/student")
+    fetch(`${API_URL}/student`)
       .then((response) => response.json())
       .then((data) => {
         console.log("DATA FROM BACKEND:", data);
-        setStudents(data);
+
+        // Agar backend array return kare
+        setStudents(Array.isArray(data) ? data : data.data || []);
       })
       .catch((error) => {
         console.log("ERROR:", error);
       });
-
   }, []);
 
-
-  // edit
+  // EDIT - Input fields mein data lana
   const editStudent = (student) => {
-
-   setEditId(student._id);
-   setName(student.name);
-   setEmail(student.email);
-   setPassword(student.password);
-
+    setEditId(student._id);
+    setName(student.name);
+    setEmail(student.email);
+    setPassword(student.password || "");
   };
 
- const updateStudent = () => {
-
-fetch(`http://localhost:5000/student/${editId}`, {
+  // UPDATE - Student update karna
+  const updateStudent = () => {
+    fetch(`${API_URL}/student/${editId}`, {
       method: "PUT",
-
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-
       body: JSON.stringify({
         name: name,
         email: email,
-        password: password
-      })
-
+        password: password,
+      }),
     })
-
       .then((response) => response.json())
+      .then((data) => {
+        console.log("UPDATED:", data);
 
-       .then((data) => {
+        if (data.data) {
+          setStudents(
+            students.map((student) =>
+              student._id === editId ? data.data : student
+            )
+          );
+        }
 
-      console.log("UPDATED:", data);
-
-      setStudents(
-        students.map((student) =>
-          student._id === editId ? data.data : student
-        )
-      );
-
-      setEditId(null);
-      setName("");
-      setEmail("");
-      setPassword("");
-
-    })
+        setEditId(null);
+        setName("");
+        setEmail("");
+        setPassword("");
+      })
       .catch((error) => {
         console.log("ERROR:", error);
       });
-
   };
 
-
-
+  // DELETE - Student delete karna
   const deleteStudent = (id) => {
-
-  fetch(`http://localhost:5000/student/${id}`, {
-
-    method: "DELETE"
-
-  })
-
-    .then((response) => response.json())
-
-    .then((data) => {
-
-      console.log("DELETED:", data);
-
-      setStudents(
-        students.filter((student) => student._id !== id)
-      );
-
+    fetch(`${API_URL}/student/${id}`, {
+      method: "DELETE",
     })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("DELETED:", data);
 
-    .catch((error) => {
-      console.log("ERROR:", error);
-    });
+        setStudents(
+          students.filter((student) => student._id !== id)
+        );
+      })
+      .catch((error) => {
+        console.log("ERROR:", error);
+      });
+  };
 
-};
-
-   // POST
+  // POST - Naya student insert karna
   const insertStudent = () => {
-
-    fetch("http://localhost:5000/student", {
-
+    fetch(`${API_URL}/student`, {
       method: "POST",
-
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-
       body: JSON.stringify({
         name: name,
         email: email,
-        password: password
-      })
-
+        password: password,
+      }),
     })
-
       .then((response) => response.json())
-
       .then((data) => {
-
         console.log("INSERTED:", data);
 
         if (data.data) {
@@ -137,32 +110,21 @@ fetch(`http://localhost:5000/student/${editId}`, {
           setEmail("");
           setPassword("");
         }
-
       })
-
       .catch((error) => {
         console.log("ERROR:", error);
       });
-
   };
-
 
   return (
     <div>
-
-
-
-     <Button variant="contained"color="success">
+      <Button variant="contained" color="success">
         Click Me
       </Button>
 
-      <Button variant="outlined">
-        Cancel
-      </Button>
+      <Button variant="outlined">Cancel</Button>
 
-      <Button variant="text">
-        Learn More
-      </Button>
+      <Button variant="text">Learn More</Button>
 
       <h1>Student Insert</h1>
 
@@ -173,7 +135,8 @@ fetch(`http://localhost:5000/student/${editId}`, {
         onChange={(e) => setName(e.target.value)}
       />
 
-      <br /><br />
+      <br />
+      <br />
 
       <input
         type="email"
@@ -182,7 +145,8 @@ fetch(`http://localhost:5000/student/${editId}`, {
         onChange={(e) => setEmail(e.target.value)}
       />
 
-      <br /><br />
+      <br />
+      <br />
 
       <input
         type="password"
@@ -191,50 +155,47 @@ fetch(`http://localhost:5000/student/${editId}`, {
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      <br /><br />
+      <br />
+      <br />
 
-
-
+      {editId ? (
+        <Button variant="contained" color="warning" onClick={updateStudent}>
+          Update Student
+        </Button>
+      ) : (
+        <Button variant="contained" color="primary" onClick={insertStudent}>
+          Insert Student
+        </Button>
+      )}
 
       <h1>Student List</h1>
-{editId ? (
 
-  <button onClick={updateStudent}>
-    Update Student
-  </button>
-
-) : (
-
-  <button onClick={insertStudent}>
-    Insert Student
-  </button>
-
-)}
       <h2>Total: {students.length}</h2>
 
-     {students.map((student) => (
+      {students.map((student) => (
+        <div key={student._id}>
+          <h3>Name: {student.name}</h3>
 
-  <div key={student._id}>
+          <p>Email: {student.email}</p>
 
-    <h3>Name: {student.name}</h3>
+          <Button
+            variant="outlined"
+            onClick={() => editStudent(student)}
+          >
+            Edit
+          </Button>
 
-    <p>Email: {student.email}</p>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => deleteStudent(student._id)}
+          >
+            Delete
+          </Button>
 
-    <p>Password: {student.password}</p>
-
-    <button onClick={() => editStudent(student)}>
-      Edit
-    </button>
-
-
-    <button onClick={() => deleteStudent(student._id)}>
-  Delete
-</button>
-
-  </div>
-
-))}
-
+          <hr />
+        </div>
+      ))}
     </div>
   );
 }
